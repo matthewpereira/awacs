@@ -1,0 +1,8 @@
+html/
+__pycache__/
+*.html
+*.pyc
+.idea
+
+settings.py
+
