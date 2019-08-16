@@ -1,15 +1,11 @@
 import numpy as np
+import pandas as pd
 import settings
+import matplotlib.pyplot as plt
 
-from datetime import datetime
 
-from random import randint
 from collections import defaultdict
 from github import Github
-
-from bokeh.plotting import output_file, figure, show
-from bokeh.models import HoverTool
-
 
 def get_prs(repo, pivotal_members):
     pr_count = defaultdict(int)
@@ -38,86 +34,47 @@ def is_pivot(login, pivotal_member):
     return False
 
 
-def get_rand_color():
-    return (randint(0, 255),randint(0, 255),randint(0, 255))
-
-
 if __name__ == "__main__":
 
     g = Github(settings.GH_KEY)
     org = g.get_organization(settings.ORGANIZATION)
     pivotal_members = []
+
     for team in org.get_teams():
         if team.name == 'Pivotal':
             pivotal_members = [member for member in team.get_members()]
+
     repos = [org.get_repo(x) for x in settings.REPOS]
 
     print("Scanning data in {}".format(settings.ORGANIZATION))
 
-    output_file("html/concourse_prs.html", title="Concourse PRs over time")
-
-    hover = HoverTool(
-        tooltips=[
-            ("Repo", "@legend"),
-            ("date", "@x{%F}"),
-            ("# of PRs", "@y")
-        ],
-        formatters={"x": "datetime"}
-    )
-    hover.point_policy = 'snap_to_data'
-
-    p = figure(width=1080, height=500, x_axis_type="datetime", tools=[hover])
-    p2 = figure(width=1080, height=500, x_axis_type="datetime", tools=[hover])
-
     totals_dict = defaultdict(int)
-
     for repo in repos:
         print("Scanning {}".format(repo.full_name))
+
         array_dates, array_occurances, pr_counts = get_prs(repo, pivotal_members)
-        p.line(array_dates, array_occurances, color=get_rand_color(), legend=repo.full_name, alpha=0.8)
 
         for key, value in pr_counts.items():
             totals_dict[key] += value
-    pr_2019 = 0
-    pr_2018 = 0
-    pr_2017 = 0
-    pr_2016 = 0
-    pr_2015 = 0
 
-    for date in totals_dict.keys():
-        if datetime.strptime('Jan 1 2015', '%b %d %Y') <= date < datetime.strptime('Jan 1 2016', '%b %d %Y'):
-            pr_2015 += totals_dict[date]
-        if datetime.strptime('Jan 1 2016', '%b %d %Y') <= date < datetime.strptime('Jan 1 2017', '%b %d %Y'):
-            pr_2016 += totals_dict[date]
-        if datetime.strptime('Jan 1 2017', '%b %d %Y') <= date < datetime.strptime('Jan 1 2018', '%b %d %Y'):
-            pr_2017 += totals_dict[date]
-        if datetime.strptime('Jan 1 2018', '%b %d %Y') <= date < datetime.strptime('Jan 1 2019', '%b %d %Y'):
-            pr_2018 += totals_dict[date]
-        if datetime.strptime('Jan 1 2018', '%b %d %Y') <= date < datetime.strptime('Jan 1 2019', '%b %d %Y'):
-            pr_2019 += totals_dict[date]
+    df = pd.DataFrame(totals_dict.items())
+    df.columns = ['Date', 'PRs']
+    df = df.set_index(df['Date'])
+    df.index = pd.to_datetime(df.index)
 
-    print(pr_2015)
-    print(pr_2016)
-    print(pr_2017)
-    print(pr_2018)
-    print(pr_2019)
+    g = df.groupby(pd.Grouper(freq="M"))
+    g = g.sum()
 
-    tx = list(totals_dict.keys())
-    ty = list(totals_dict.values())
-    tx, ty = zip(*sorted(zip(tx, ty)))
+    plt.figure(figsize=(12, 16), dpi=100)
+    ax = g.plot.line()
+    ax.set_title("Concourse  # of PRs per Year")
+    ax.set_ylabel("# PRs per month")
+    ax.set_xlabel("Date")
+    ax.grid()
 
-    totals_x = np.array(tx, dtype=np.datetime64)
-    totals_y = np.array(ty)
-    p2.line(totals_x, totals_y, color="firebrick", legend="Total PRs")
+    plt.savefig('test.png', dpi=100)
+    plt.show()
 
-    p2.title.text = "PR Volume for {} over time".format(settings.ORGANIZATION)
-    p2.legend.location = "top_left"
-    p2.grid.grid_line_alpha = 0
-    p2.xaxis.axis_label = 'Date'
-    p2.yaxis.axis_label = 'PRs'
-    p2.ygrid.band_fill_color = "olive"
-    p2.ygrid.band_fill_alpha = 0.1
-
-    show(p2)
+    print(g)
 
 
