@@ -3,6 +3,8 @@ __pycache__/
 *.html
 *.pyc
 .idea
+.vscode
+*.png
 
 settings.py
 

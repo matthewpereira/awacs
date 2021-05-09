@@ -36,11 +36,13 @@ def is_pivot(login, pivotal_member):
 
 if __name__ == "__main__":
 
+    print("Spinning up the radar...connecting to GitHub")
     g = Github(settings.GH_KEY)
     org = g.get_organization(settings.ORGANIZATION)
     pivotal_members = []
 
-    for team in org.get_teams():
+    for team in org.get_teams(): 
+        print
         if team.name == 'Pivotal':
             pivotal_members = [member for member in team.get_members()]
 

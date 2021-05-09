@@ -10,7 +10,7 @@ Eyes in the sky and helps pull data on Concourse CI's github repos
 # Steps
 * Install requirements `pip install -r requirements.txt`
 * Make a file called `settings.py` with the following consts:
-  * `GH_KEY`: your github key as a string
-  * `ORGANIZATION`: the name of the org for the repos you are scanning e.g. concourse
-  * `REPOS`: a list of repo names as strings
+  * `GH_KEY`: your personal github key as a string
+  * `ORGANIZATION`: the name of the org for the repos you are scanning e.g. `concourse`
+  * `REPOS`: a list of repo names as strings `[concourse, docs, ...]`
 * Run `main.py`
